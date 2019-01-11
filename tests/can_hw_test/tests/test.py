@@ -115,11 +115,9 @@ class Test:
 
 
 def setup_test(can, t):
-    can.
-    t.manual_test("Reset BPT")
-
-    bpt.set_uart_baud(115200)
-    bpt.execute_changes()
+    t.manual_test("Reset MCU")
+    can.set_uart_baud(115200)
+    can.execute_changes()
     t.manual_test("BPT: setup default baudrate")
 
 
@@ -259,17 +257,21 @@ def main():
             raise ValueError('Invalid log level: %s' % loglevel)
         logging.basicConfig(level=loglevel)
 
-    default_baudrate=115200
-    can = PeriphCANIf(port=args.dut_port, baudrate=default_baudrate)
+    logging.debug('Chosing {} riot port, riot can interface {}, linux can ' \ 
+    'device: {}').format(args.riot_port,
+                         args.riot_can_if, args.linux_can_device)
+
+    can = PeriphCANIf(port=args.riot_port)
 
     print('Starting Test periph_can')
     test_list = list()
-    test_list.append(echo_test(bpt, uart, args.dut_uart))
+    test_list.append(setup_test(can, t))
+#     test_list.append(echo_test(bpt, uart, args.dut_uart))
     print_full_result(test_list[-1])
-    test_list.append(echo_ext_test(bpt, uart, args.dut_uart))
-    print_full_result(test_list[-1])
-    test_list.append(register_read_test(bpt, uart, args.dut_uart))
-    print_full_result(test_list[-1])
+#     test_list.append(echo_ext_test(bpt, uart, args.dut_uart))
+#     print_full_result(test_list[-1])
+#     test_list.append(register_read_test(bpt, uart, args.dut_uart))
+#     print_full_result(test_list[-1])
 
     print_results(test_list)
 

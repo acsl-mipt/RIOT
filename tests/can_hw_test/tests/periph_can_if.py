@@ -3,6 +3,8 @@
 # This file is subject to the terms and conditions of the GNU Lesser
 # General Public License v2.1. See the file LICENSE in the top level
 # directory for more details.
+
+
 """@package PyToAPI
 This module handles parsing of information from RIOT periph_can test.
 """
@@ -40,7 +42,7 @@ class PeriphCANIf(DutShell):
     DEFAULT_CAN_FRAME = [0x00, 0x01, 0x02, 0x35, 0x55, 0x22]
 
 
-    def can_send(self, _if=DEFAULT_CAN_IF, cid=DEFAULT_IF, frame=DEFAULT_CAN_FRAME):
+    def can_send(self, _if=DEFAULT_CAN_IF, cid=DEFAULT_CAN_CID, frame=DEFAULT_CAN_FRAME):
         """Get access to the I2C bus."""
         return self.send_cmd('test_can send {} {} {}'.format(_if, cid, frame))
 
