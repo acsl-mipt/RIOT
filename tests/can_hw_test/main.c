@@ -116,7 +116,6 @@ static int _list(int argc, char **argv) {
 
 static int _send(int argc, char **argv)
 {
-	puts("Command: test_can send ifnum can_id [B1 [B2 [B3 [B4 [B5 [B6 [B7 [B8]]]]]]]]");
 
     if (argc < 5) {
         print_usage();
@@ -136,9 +135,12 @@ static int _send(int argc, char **argv)
         puts("Error: Invalid length");
         return 1;
     }
+
     for (int i = 0; i < frame.can_dlc; i++) {
-        frame.data[i] = strtol(argv[4 + i], NULL, 16);
+        frame.data[i] = (char)strtol(argv[4 + i], NULL, 16);
     }
+
+	printf("Command: test_can send %d %lu %s\n", ifnum, frame.can_id, argv[4]);
     conn_can_raw_t conn;
     conn_can_raw_create(&conn, NULL, 0, ifnum, 0);
     int ret = conn_can_raw_send(&conn, &frame, 0);
