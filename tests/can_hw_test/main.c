@@ -92,16 +92,8 @@ static int _list(int argc, char **argv) {
     puts("Command: test_can list\n");
     //if there is any can if, print success
     if(CAN_DLL_NUMOF){
-    	printf("Success:  names:[");
+    	printf("Success:  interface(s):[");
     	int i;
-    	for (i = 0; i < CAN_DLL_NUMOF; i++) {
-    		const char *name = raw_can_get_name_by_ifnum(i);
-			if (i != 0) {
-				printf(", ");
-			}
-    		printf("%s", name ? name : "No name assigned");
-    	}
-    	printf("]=> interface number [");
 		for (i = 0; i < CAN_DLL_NUMOF; i++) {
 			if (i != 0) {
 				printf(", ");

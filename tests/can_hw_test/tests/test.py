@@ -15,6 +15,8 @@ import errno
 import logging
 import random
 import string
+import can
+import random
 
 from periph_can_if import PeriphCANIf
 
@@ -114,24 +116,40 @@ class Test:
         self.cmd_log.append(tp)
 
 
-def setup_test(can, t):
-    t.manual_test("Reset MCU")
-    can.set_uart_baud(115200)
-    can.execute_changes()
-    t.manual_test("BPT: setup default baudrate")
-
-
-def increment_data(data):
-    """Increment each character."""
-    return ''.join(chr(ord(n) + 1) for n in data)
-
+def setup_test(can, linux_can_if = None):
+#   do common tasks before each test
+    logging.info("Reset MCU")
+    can.mcu_reboot()
+    if(linux_can_if is not None):
+#    configure iface baudrate
+        pass
 
 def create_random_data(data_len):
     """Generate random data with specified length."""
     return 't' + ''.join([random.choice(
         string.digits) for n in range(data_len)])
 
+def get_hexa_string(len=1):
+    return ''.join(random.choice('0123456789abcdef') for n in xrange(len))
+    
+def send_random_msg(can_dev, linux_can_bus):
+    
+    pass
 
+def interfaces_list_test(can_dev):
+    cmd_log = list()
+    t = Test('interfaces list test',
+             'Tests DUT prints a list with 3 can interfaces',
+             cmd_log)
+    
+    setup_test(can_dev)
+    
+    t.run_test(can_dev.can_get_list(), "Success", [0, 1, 2])
+    
+    return t
+    
+    
+    
 def echo_test(bpt, uart, dut_uart, support_reset=False):
     cmd_log = list()
     t = Test('echo test',
@@ -242,14 +260,27 @@ def main():
                         help='Selected CAN interface on RIOT',
                         type=int,
                         default=1)
-    parser.add_argument("--linux_can_device",
-                        help='Device where USB-CAN converter is connected on Linux device', 
-                        default="/dev/ttyUSB0",
+    parser.add_argument("--linux_can_if",
+                        help='USB-CAN converter Linux Interface', 
+                        default="can0",
                         type=str)
 
     
     args = parser.parse_args()
 
+
+#     sock = socket.socket(socket.PF_CAN, socket.SOCK_RAW, socket.CAN_RAW)
+#     interface = args.linux_can_if
+#     try:
+#         sock.bind((interface,))
+#     except OSError:
+#         sys.stderr.write("Could not bind to interface '%s'\n" % interface)
+#         # do something about the error...
+    
+    
+    linux_can_bus = can.interface.Bus(channel='can0', bustype='socketcan_native')
+#     msg= can.Message(arbitration_id=0x0de, data=[0, 25, 0, 1, 3, 1, 4, 1], extended_id=False)
+    
     if args.log is not None:
         loglevel = args.log
         numeric_level = getattr(logging, loglevel.upper(), None)
@@ -257,18 +288,17 @@ def main():
             raise ValueError('Invalid log level: %s' % loglevel)
         logging.basicConfig(level=loglevel)
 
-    logging.debug('Chosing {} riot port, riot can interface {}, linux can ' \ 
-    'device: {}').format(args.riot_port,
-                         args.riot_can_if, args.linux_can_device)
+    logging.debug('Choosing {} riot port, riot can interface {}, linux can ' \
+    'device: {}'.format(args.riot_port,
+                         args.riot_can_if, args.linux_can_if))
 
-    can = PeriphCANIf(port=args.riot_port)
+    can_dut = PeriphCANIf(port=args.riot_port)
 
-    print('Starting Test periph_can')
+    logging.info('Starting Test periph_can')
     test_list = list()
-    test_list.append(setup_test(can, t))
-#     test_list.append(echo_test(bpt, uart, args.dut_uart))
+    test_list.append(interfaces_list_test(can_dut))
     print_full_result(test_list[-1])
-#     test_list.append(echo_ext_test(bpt, uart, args.dut_uart))
+    test_list.append(send_random_msg(can_dut, linux_can_bus))
 #     print_full_result(test_list[-1])
 #     test_list.append(register_read_test(bpt, uart, args.dut_uart))
 #     print_full_result(test_list[-1])

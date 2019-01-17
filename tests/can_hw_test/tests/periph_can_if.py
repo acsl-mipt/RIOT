@@ -104,10 +104,6 @@ class PeriphCANIf(DutShell):
 #         return self.send_cmd('can_write_bytes'
 #                              ' {} {} {} {}'.format(dev, addr, flag, stri))
 
-    def can_get_devs(self):
-        """Gets amount of supported can devices."""
-        return self.send_cmd('can_get_devs')
-
     def can_get_list(self):
         """Get the id of the fw."""
         return self.send_cmd('test_can list')
