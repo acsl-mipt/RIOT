@@ -24,6 +24,7 @@ import string
 import can
 import random
 import string
+import time
 
 from periph_can_if import PeriphCANIf
 from linux_can import CANSocket
@@ -153,16 +154,34 @@ def send_random_msg(can_dev, linux_can_bus):
              'Sends 8 random bytes (2 times) and check what we get, using the linux interface',
              cmd_log)
     
-#     setup_test(can_dev)
+    setup_test(can_dev)
 
     can_if_on_board = 1
-    can_id = 302
+    can_id = hex(random.randrange(0, 2457, 1))
     frame_1 = get_hexa_string(8)
     t.run_test(can_dev.can_send(can_if_on_board, can_id, frame_1), "Success", frame_1)
+    
+    time.sleep(0.2)
+    message = linux_can_bus.recv(1.0)  # Timeout in seconds.
+    int_can_id = int(can_id, 16)
+    assert message.arbitration_id == int_can_id, 'Sent and received CID are not equal'
 
-    can_id = 407
+    sent_to_device = bytearray(bytes.fromhex(''.join(frame_1)))
+    received_on_linux = message.data
+    assert sent_to_device == received_on_linux, 'Sent and received frame are not equal'
+    
+    can_id = hex(random.randrange(0, 2457, 1))
     frame_2 = get_hexa_string(8)
-    t.run_test(can_dev.can_send(can_if_on_board, can_id, frame_2), "Success", frame_2)
+    t.run_test(can_dev.can_send(can_if_on_board, can_id, frame_2), "Success", [str(frame_2)])
+    
+    time.sleep(0.2)
+    message = linux_can_bus.recv(1.0)  # Timeout in seconds.
+    int_can_id = int(can_id, 16)
+    assert message.arbitration_id == int_can_id, 'Sent and received CID (2nd round) are not equal'
+
+    sent_to_device = bytearray(bytes.fromhex(''.join(frame_2)))
+    received_on_linux = message.data
+    assert sent_to_device == received_on_linux, 'Sent and received 2nd frame are not equal'
 
     return t
 
@@ -294,20 +313,9 @@ def main():
                         type=str)
 
     
-    args = parser.parse_args()
-
-
-#     sock = socket.socket(socket.PF_CAN, socket.SOCK_RAW, socket.CAN_RAW)
-#     interface = args.linux_can_if
-#     try:
-#         sock.bind((interface,))
-#     except OSError:
-#         sys.stderr.write("Could not bind to interface '%s'\n" % interface)
-#         # do something about the error...
+    args = parser.parse_args()    
     
-    
-    linux_can_bus = can.interface.Bus(channel='can0', bustype='socketcan_native')
-#     msg= can.Message(arbitration_id=0x0de, data=[0, 25, 0, 1, 3, 1, 4, 1], extended_id=False)
+    linux_can_bus = can.interface.Bus(channel='can0', bustype='socketcan_native', bitrate=500000)
     
     if args.log is not None:
         loglevel = args.log
@@ -321,10 +329,11 @@ def main():
                          args.riot_can_if, args.linux_can_if))
     can_dut = PeriphCANIf(port=args.riot_port)
 
+    
     logging.info('Starting Test periph_can')
     test_list = list()
-#     test_list.append(interfaces_list_test(can_dut))
-#     print_full_result(test_list[-1])
+    test_list.append(interfaces_list_test(can_dut))
+    print_full_result(test_list[-1])
     test_list.append(send_random_msg(can_dut, linux_can_bus))
     print_full_result(test_list[-1])
 # #     test_list.append(register_read_test(bpt, uart, args.dut_uart))
