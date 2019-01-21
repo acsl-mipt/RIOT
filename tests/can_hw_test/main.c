@@ -68,7 +68,7 @@ static void print_usage(void)
 {
     puts("test_can list");
     puts("test_can send ifnum can_id [B1 [B2 [B3 [B4 [B5 [B6 [B7 [B8]]]]]]]]");
-    printf("test_can recv ifnum user_id timeout can_id1 [can_id2..can_id%d]\n", MAX_FILTER);
+    printf("test_can recv ifnum rx_thread_id us_timeout can_id1 [can_id2..can_id%d]\n", MAX_FILTER);
     puts("test_can close user_id");
 #ifdef MODULE_CAN_ISOTP
     puts("test_can bind_isotp ifnum user_id source_id dest_id");
@@ -151,7 +151,7 @@ static int _send(int argc, char **argv)
 
 static int _receive(int argc, char **argv)
 {
-	printf("Command: test_can recv ifnum user_id timeout can_id1 [can_id2..can_id%d]\n", MAX_FILTER);
+	printf("Command: test_can recv ifnum rx_thread_id us_timeout can_id1 [can_id2..can_id%d]\n", MAX_FILTER);
 
     if (argc < 4) {
         print_usage();
@@ -618,13 +618,11 @@ static void *_receive_thread(void *args)
             int ret;
             while ((ret = conn_can_raw_recv(&conn[thread_nb], &frame, msg.content.value))
                    == sizeof(struct can_frame)) {
-                printf("%d: %-8s %" PRIx32 "  [%x] ",
-                       thread_nb, raw_can_get_name_by_ifnum(conn[thread_nb].ifnum),
-                       frame.can_id, frame.can_dlc);
+                puts("Success: [");
                 for (int i = 0; i < frame.can_dlc; i++) {
                     printf(" %02X", frame.data[i]);
                 }
-                printf("\n");
+                printf("]\n");
             }
             printf("%d: recv terminated: ret=%d\n", thread_nb, ret);
             conn_can_raw_close(&conn[thread_nb]);

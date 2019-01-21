@@ -42,126 +42,55 @@ class PeriphCANIf(DutShell):
 
 
     def can_send(self, _if=DEFAULT_CAN_IF, cid=DEFAULT_CAN_CID, frame=DEFAULT_CAN_FRAME):
-        """Get access to the I2C bus."""
-
         cmd_to_send = 'test_can send {} {} {}'.format(_if, cid, ' '.join(frame))
         print(cmd_to_send)
         return self.send_cmd(cmd_to_send)
 
-    def can_release(self, dev=DEFAULT_CAN_IF):
-        """Release to the I2C bus."""
-#         return self.send_cmd('can_release {}'.format(dev))
-
-    def can_read_reg(self, dev=DEFAULT_CAN_IF, addr=0, reg=0,
-                     flag=0):
-        """Read byte from register."""
-#         return self.send_cmd('can_read_reg'
-#                              ' {} {} {} {}'.format(dev, addr, reg, flag))
-
-    def can_read_regs(self, dev=DEFAULT_CAN_IF, addr=0, reg=0,
-                      leng=0, flag=0):
-        """Read bytes from registers."""
-#         return self.send_cmd('can_read_regs'
-#                              ' {} {} {} {} {}'.format(dev, addr, reg,
-#                                                       leng, flag))
-
-    def can_read_byte(self, dev=DEFAULT_CAN_IF, addr=0, flag=0):
-        """Read byte from the I2C device."""
-#         return self.send_cmd('can_read_byte {} {} {}'.format(dev, addr, flag))
-
-    def can_read_bytes(self, dev=DEFAULT_CAN_IF, addr=0, leng=0,
-                       flag=0):
-        """Read bytes from the I2C device."""
-#         return self.send_cmd('can_read_bytes'
-#                              ' {} {} {} {}'.format(dev, addr, leng, flag))
-
-    def can_write_reg(self, dev=DEFAULT_CAN_IF, addr=0, reg=0,
-                      data=0, flag=0):
-        """Write byte to the I2C device."""
-#         if isinstance(data, list):
-#             data = data[0]
-#         return self.send_cmd('can_write_reg'
-#                              ' {} {} {} {} {}'.format(dev, addr, reg,
-#                                                       data, flag))
-
-    def can_write_regs(self, dev=DEFAULT_CAN_IF, addr=0, reg=0,
-                       data=0, flag=0):
-        """Write byte to register."""
-#         stri = ' '.join(str(x) for x in data)
-#         return self.send_cmd('can_write_regs'
-#                              ' {} {} {} {} {}'.format(dev, addr, reg, flag, stri))
-
-    def can_write_byte(self, dev=DEFAULT_CAN_IF, addr=0, data=0,
-                       flag=0):
-        """Write bytes to registers."""
-#         if isinstance(data, list):
-#             data = data[0]
-#         return self.send_cmd('can_write_byte'
-#                              ' {} {} {} {}'.format(dev, addr, data, flag))
-
-    def can_write_bytes(self, dev=DEFAULT_CAN_IF, addr=0,
-                        data=0, flag=0):
-        """Write bytes to registers."""
-#         stri = ' '.join(str(x) for x in data)
-#         return self.send_cmd('can_write_bytes'
-#                              ' {} {} {} {}'.format(dev, addr, flag, stri))
+    def can_read_bytes(self, dev=DEFAULT_CAN_IF, rx_thread_nb=0, can_id=0):
+        cmd_to_send = 'test_can recv {} {} {} {}'.format(dev, rx_thread_nb, 10000000, str(hex(can_id)))
+        print(cmd_to_send)
+        return self.send_cmd(cmd_to_send)
 
     def can_get_list(self):
-        """Get the id of the fw."""
-        return self.send_cmd('test_can list')
+        cmd_to_send = 'test_can list'
+        return self.send_cmd(cmd_to_send)
 
-    def get_command_list(self):
-        """List of all commands."""
-        cmds = list()
-        cmds.append(self.can_get_devs)
-        cmds.append(self.can_get_available_list)
-        cmds.append(self.can_send)
-        cmds.append(self.can_read_reg)
-        cmds.append(self.can_read_regs)
-        cmds.append(self.can_read_byte)
-        cmds.append(self.can_read_bytes)
-        cmds.append(self.can_write_reg)
-        cmds.append(self.can_write_regs)
-        cmds.append(self.can_write_byte)
-        cmds.append(self.can_write_bytes)
-        cmds.append(self.can_release)
-        return cmds
     
     def mcu_reboot(self):
         return self.send_cmd('reboot')
 
-def parse_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-i', '--interface', type=str, help='interface name (e.g. vcan0)')
-    parser.add_argument('-ci', '--cob_id', type=str, help='hexadecimal COB-ID (e.g. 10a)')
-    parser.add_argument('-b', '--body', type=str, nargs='?', default='',
-      help='hexadecimal msg body up to 8 bytes long (e.g. 00af0142fe)')
-    parser.add_argument('-eid', '--extended-id', action='store_true', default=False,
-      help='use extended (29 bit) COB-ID')
-
-
-    return parser.parse_args()
-
-def main():
-    """Test for CAN."""
-    logging.getLogger().setLevel(logging.DEBUG)
-
-    args = parse_args()    
-
-    try:
-        pc_can = CANSocket(interface = args.interface)
-        riot_can = PeriphCANIf(port='/dev/ttyUSB0', baudrate=115200)
-        
-        logging.debug(riot_can.can_get_available_list())
-        cmds = riot_can.get_command_list()
-        logging.debug("======================================================")
-        for cmd in cmds:
-            cmd()
-            logging.debug("--------------------------------------------------")
-        logging.debug("======================================================")
-    except Exception as exc:
-        logging.debug(exc)
-
-
-if __name__ == "__main__":
-    main()
+# def parse_args():
+#     parser = argparse.ArgumentParser()
+#     parser.add_argument('-i', '--interface', type=str, help='interface name (e.g. vcan0)')
+#     parser.add_argument('-ci', '--cob_id', type=str, help='hexadecimal COB-ID (e.g. 10a)')
+#     parser.add_argument('-b', '--body', type=str, nargs='?', default='',
+#       help='hexadecimal msg body up to 8 bytes long (e.g. 00af0142fe)')
+#     parser.add_argument('-eid', '--extended-id', action='store_true', default=False,
+#       help='use extended (29 bit) COB-ID')
+# 
+# 
+#     return parser.parse_args()
+# 
+# def main():
+#     """Test for CAN."""
+#     logging.getLogger().setLevel(logging.DEBUG)
+# 
+#     args = parse_args()    
+# 
+#     try:
+#         pc_can = CANSocket(interface = args.interface)
+#         riot_can = PeriphCANIf(port='/dev/ttyUSB0', baudrate=115200)
+#         
+#         logging.debug(riot_can.can_get_available_list())
+#         cmds = riot_can.get_command_list()
+#         logging.debug("======================================================")
+#         for cmd in cmds:
+#             cmd()
+#             logging.debug("--------------------------------------------------")
+#         logging.debug("======================================================")
+#     except Exception as exc:
+#         logging.debug(exc)
+# 
+# 
+# if __name__ == "__main__":
+#     main()

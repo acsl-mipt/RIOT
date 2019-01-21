@@ -27,7 +27,11 @@ import string
 import time
 
 from periph_can_if import PeriphCANIf
-from linux_can import CANSocket
+
+def random_with_N_digits(n):
+    range_start = 10**(n-1)
+    range_end = (10**n)-1
+    return random.randint(range_start, range_end)
 
 def kwexpect(val1, val2, level="WARN"):
     """A poor mans pexpect"""
@@ -133,12 +137,13 @@ def setup_test(can, linux_can_if = None):
 #    configure iface baudrate
         pass
 
-def create_random_data(data_len):
-    """Generate random data with specified length."""
-    return 't' + ''.join([random.choice(
-        string.digits) for n in range(data_len)])
+def get_int_string_list(len=1):
+    l = list()
+    for i in range(len):
+        l.append(random_with_N_digits(2))
+    return l
 
-def get_hexa_string(len=1):
+def get_hexa_string_list(len=1):
     total_len = 2 * len
     hexa_str = ''.join(random.choice(string.hexdigits[:16]) for n in range(total_len))
     l = list()
@@ -154,25 +159,28 @@ def send_random_msg(can_dev, linux_can_bus):
              'Sends 8 random bytes (2 times) and check what we get, using the linux interface',
              cmd_log)
     
+    
+    '''2047 is 0x7FF (max can id number) in decimal'''
     setup_test(can_dev)
 
     can_if_on_board = 1
-    can_id = hex(random.randrange(0, 2457, 1))
-    frame_1 = get_hexa_string(8)
-    t.run_test(can_dev.can_send(can_if_on_board, can_id, frame_1), "Success", frame_1)
+    can_id = hex(random.randrange(0, 2047, 1))
+    frame_1 = get_hexa_string_list(8)
+    t.run_test(can_dev.can_send(can_if_on_board, can_id, frame_1), "Success", [' '.join(frame_1)+' '])
     
     time.sleep(0.2)
     message = linux_can_bus.recv(1.0)  # Timeout in seconds.
     int_can_id = int(can_id, 16)
+    print("Send ID={}, RX ID={}".format(message.arbitration_id, int_can_id))
     assert message.arbitration_id == int_can_id, 'Sent and received CID are not equal'
 
     sent_to_device = bytearray(bytes.fromhex(''.join(frame_1)))
     received_on_linux = message.data
     assert sent_to_device == received_on_linux, 'Sent and received frame are not equal'
     
-    can_id = hex(random.randrange(0, 2457, 1))
-    frame_2 = get_hexa_string(8)
-    t.run_test(can_dev.can_send(can_if_on_board, can_id, frame_2), "Success", [str(frame_2)])
+    can_id = hex(random.randrange(0, 2047, 1))
+    frame_2 = get_hexa_string_list(8)
+    t.run_test(can_dev.can_send(can_if_on_board, can_id, frame_2), "Success", [' '.join(frame_2)+' '])
     
     time.sleep(0.2)
     message = linux_can_bus.recv(1.0)  # Timeout in seconds.
@@ -183,6 +191,29 @@ def send_random_msg(can_dev, linux_can_bus):
     received_on_linux = message.data
     assert sent_to_device == received_on_linux, 'Sent and received 2nd frame are not equal'
 
+    return t
+
+def receive_random_msg(can_dev, linux_can_bus):
+    cmd_log = list()
+    t = Test('Receive random data test fromm linux PC to device',
+             'Receives 8 random bytes (2 times) and check what we get, using the linux interface',
+             cmd_log)
+    
+    setup_test(can_dev)
+
+    can_if_on_board = 1
+    rx_thread_nb = 0
+
+    can_id = random.randrange(0, 2457, 1)
+    frame_1 = get_int_string_list(8)
+    msg = can.Message(arbitration_id=can_id,
+                      data=frame_1,
+                      extended_id=False)
+
+    linux_can_bus.send(msg)
+    t.run_test(can_dev.can_read_bytes(can_if_on_board, rx_thread_nb,
+                                      can_id), "Success", frame_1)
+    
     return t
 
 def interfaces_list_test(can_dev):
@@ -197,64 +228,6 @@ def interfaces_list_test(can_dev):
     
     return t
     
-def echo_test(bpt, uart, dut_uart, support_reset=False):
-    cmd_log = list()
-    t = Test('echo test',
-             'Tests DUT receive/transmit functionality in loopback mode',
-             cmd_log)
-
-    setup_test(bpt, t)
-
-    t.run_test(uart.uart_init(dut_uart, 115200), "Success")
-    t.run_test(uart.uart_send_string(dut_uart, "t111"), "Success", ["t111"])
-    data = create_random_data(100)
-    t.run_test(uart.uart_send_string(dut_uart, data), "Success", [data])
-    t.run_test(uart.uart_init(dut_uart, 38400), "Success")
-    t.run_test(uart.uart_send_string(dut_uart, "t111"), "Timeout")
-
-    return t
-
-
-def echo_ext_test(bpt, uart, dut_uart, support_reset=False):
-    cmd_log = list()
-    t = Test('echo ext test',
-             'Tests DUT receive/transmit functionality in ext loopback mode',
-             cmd_log)
-
-    setup_test(bpt, t)
-
-    bpt.set_uart_mode(1)
-    bpt.execute_changes()
-    t.manual_test("BPT: set echo ext mode")
-
-    t.run_test(uart.uart_init(dut_uart, 115200), "Success")
-    t.run_test(uart.uart_send_string(dut_uart, "t111"), "Success", ["u222"])
-    data = create_random_data(100)
-    t.run_test(uart.uart_send_string(dut_uart, data), "Success", [increment_data(data)])
-
-    return t
-
-
-def register_read_test(bpt, uart, dut_uart, support_reset=False):
-    cmd_log = list()
-    t = Test('register read test',
-             'Tests DUT receive/transmit functionality via reading BPT registers',
-             cmd_log)
-
-    setup_test(bpt, t)
-
-    bpt.set_uart_mode(2)
-    bpt.execute_changes()
-    t.manual_test("BPT: set echo ext mode")
-
-    t.run_test(uart.uart_init(dut_uart, 115200), "Success")
-    t.run_test(uart.uart_send_string(
-        dut_uart, "\"rr 152 10\""), "Success", ["0,0x09080706050403020100"])
-    t.run_test(uart.uart_send_string(
-        dut_uart, "\"rr -1 10\""), "Success", [errno.EINVAL])
-
-    return t
-
 
 def print_full_result(test):
     """Print full test results."""
@@ -336,6 +309,9 @@ def main():
     print_full_result(test_list[-1])
     test_list.append(send_random_msg(can_dut, linux_can_bus))
     print_full_result(test_list[-1])
+    test_list.append(receive_random_msg(can_dut, linux_can_bus))
+    print_full_result(test_list[-1])
+    
 # #     test_list.append(register_read_test(bpt, uart, args.dut_uart))
 # #     print_full_result(test_list[-1])
 # 
