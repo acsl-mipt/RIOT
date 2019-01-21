@@ -128,17 +128,24 @@ static int _send(int argc, char **argv)
         return 1;
     }
 
+#define MAX_STR_LEN	60
+    char hexa_frame[MAX_STR_LEN];
+    memset(hexa_frame, 0, sizeof(hexa_frame));
     for (int i = 0; i < frame.can_dlc; i++) {
         frame.data[i] = (char)strtol(argv[4 + i], NULL, 16);
+        strcat(hexa_frame, argv[4 + i]);
+        strcat(hexa_frame, " ");
     }
 
-	printf("Command: test_can send %d %lu %s\n", ifnum, frame.can_id, argv[4]);
+	printf("Command: test_can send %d %s %s\n", ifnum, argv[3], hexa_frame);
     conn_can_raw_t conn;
     conn_can_raw_create(&conn, NULL, 0, ifnum, 0);
     int ret = conn_can_raw_send(&conn, &frame, 0);
     if (ret < 0) {
         puts("Error: Error when trying to send");
     }
+    printf("Success: sent [%s]\n", hexa_frame);
+    memset(hexa_frame, 0, sizeof(hexa_frame));
     return 0;
 }
 

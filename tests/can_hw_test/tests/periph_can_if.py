@@ -15,7 +15,6 @@ import argparse
 try:
     import socket, sys
     from riot_pal import DutShell
-    from linux_can import CANSocket
 except ImportError as e:
     raise ImportError(e)
 
@@ -44,7 +43,10 @@ class PeriphCANIf(DutShell):
 
     def can_send(self, _if=DEFAULT_CAN_IF, cid=DEFAULT_CAN_CID, frame=DEFAULT_CAN_FRAME):
         """Get access to the I2C bus."""
-        return self.send_cmd('test_can send {} {} {}'.format(_if, cid, frame))
+
+        cmd_to_send = 'test_can send {} {} {}'.format(_if, cid, ' '.join(frame))
+        print(cmd_to_send)
+        return self.send_cmd(cmd_to_send)
 
     def can_release(self, dev=DEFAULT_CAN_IF):
         """Release to the I2C bus."""

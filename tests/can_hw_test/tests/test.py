@@ -1,15 +1,21 @@
 #!/usr/bin/env python3
 
-# Copyright (C) 2018 Kevin Weiss <kevin.weiss@haw-hamburg.de>
+# Copyright (C) 2019 Javier FILEIV <javier.fileiv@gmail.com>
 #
 # This file is subject to the terms and conditions of the GNU Lesser
 # General Public License v2.1. See the file LICENSE in the top level
 # directory for more details.
 
-"""@package PyToAPI
-A test that can be used for now but should be adapted to a framework.
-TODO: REMOVE and adapt to a proper testing platform
+# Based on Kevin Weiss <kevin.weiss@haw-hamburg.de> test files. Thank you! :)
 """
+Test cases:
+1)List all can interfaces on the board
+2)Send random values to the board can iface using USB-CAN converter.
+3receive random generated CAN values
+4)Send random values and check result, reboot board, send another values an check results.
+5)Receive random values and check results, reboot board, receive another random values and check results
+"""
+
 import argparse
 import errno
 import logging
@@ -17,8 +23,10 @@ import random
 import string
 import can
 import random
+import string
 
 from periph_can_if import PeriphCANIf
+from linux_can import CANSocket
 
 def kwexpect(val1, val2, level="WARN"):
     """A poor mans pexpect"""
@@ -130,11 +138,33 @@ def create_random_data(data_len):
         string.digits) for n in range(data_len)])
 
 def get_hexa_string(len=1):
-    return ''.join(random.choice('0123456789abcdef') for n in xrange(len))
+    total_len = 2 * len
+    hexa_str = ''.join(random.choice(string.hexdigits[:16]) for n in range(total_len))
+    l = list()
+    n = 0
+    while n < total_len:
+        l.append((hexa_str[n]+hexa_str[n+1]))
+        n += 2
+    return l
     
 def send_random_msg(can_dev, linux_can_bus):
+    cmd_log = list()
+    t = Test('send random data test fromm device to linux PC',
+             'Sends 8 random bytes (2 times) and check what we get, using the linux interface',
+             cmd_log)
     
-    pass
+#     setup_test(can_dev)
+
+    can_if_on_board = 1
+    can_id = 302
+    frame_1 = get_hexa_string(8)
+    t.run_test(can_dev.can_send(can_if_on_board, can_id, frame_1), "Success", frame_1)
+
+    can_id = 407
+    frame_2 = get_hexa_string(8)
+    t.run_test(can_dev.can_send(can_if_on_board, can_id, frame_2), "Success", frame_2)
+
+    return t
 
 def interfaces_list_test(can_dev):
     cmd_log = list()
@@ -147,8 +177,6 @@ def interfaces_list_test(can_dev):
     t.run_test(can_dev.can_get_list(), "Success", [0, 1, 2])
     
     return t
-    
-    
     
 def echo_test(bpt, uart, dut_uart, support_reset=False):
     cmd_log = list()
@@ -291,18 +319,17 @@ def main():
     logging.debug('Choosing {} riot port, riot can interface {}, linux can ' \
     'device: {}'.format(args.riot_port,
                          args.riot_can_if, args.linux_can_if))
-
     can_dut = PeriphCANIf(port=args.riot_port)
 
     logging.info('Starting Test periph_can')
     test_list = list()
-    test_list.append(interfaces_list_test(can_dut))
-    print_full_result(test_list[-1])
+#     test_list.append(interfaces_list_test(can_dut))
+#     print_full_result(test_list[-1])
     test_list.append(send_random_msg(can_dut, linux_can_bus))
-#     print_full_result(test_list[-1])
-#     test_list.append(register_read_test(bpt, uart, args.dut_uart))
-#     print_full_result(test_list[-1])
-
+    print_full_result(test_list[-1])
+# #     test_list.append(register_read_test(bpt, uart, args.dut_uart))
+# #     print_full_result(test_list[-1])
+# 
     print_results(test_list)
 
 
