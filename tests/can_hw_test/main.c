@@ -618,9 +618,9 @@ static void *_receive_thread(void *args)
             int ret;
             while ((ret = conn_can_raw_recv(&conn[thread_nb], &frame, msg.content.value))
                    == sizeof(struct can_frame)) {
-                puts("Success: [");
+                printf("Success: [%03lX ", frame.can_id);
                 for (int i = 0; i < frame.can_dlc; i++) {
-                    printf(" %02X", frame.data[i]);
+                    printf("%02X ", frame.data[i]);
                 }
                 printf("]\n");
             }

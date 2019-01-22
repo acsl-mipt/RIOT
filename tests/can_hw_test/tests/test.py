@@ -206,14 +206,28 @@ def receive_random_msg(can_dev, linux_can_bus):
 
     can_id = random.randrange(0, 2457, 1)
     frame_1 = get_int_string_list(8)
+
+    cmd_to_send = 'test_can recv {} {} {} {}'.format(can_if_on_board, rx_thread_nb, 0, str(hex(can_id)))
+    can_dev._write(cmd_to_send)
+    time.sleep(2)
     msg = can.Message(arbitration_id=can_id,
                       data=frame_1,
                       extended_id=False)
 
     linux_can_bus.send(msg)
-    t.run_test(can_dev.can_read_bytes(can_if_on_board, rx_thread_nb,
-                                      can_id), "Success", frame_1)
-    
+    time.sleep(0.5)
+    t.run_test(can_dev.can_only_get_output(cmd_to_send), "Success", " ")
+
+
+    frame_2 = get_int_string_list(8)
+    msg = can.Message(arbitration_id=can_id,
+                      data=frame_2,
+                      extended_id=False)
+
+    linux_can_bus.send(msg)
+    time.sleep(0.5)
+    t.run_test(can_dev.can_only_get_output(cmd_to_send), "Success", " ")
+
     return t
 
 def interfaces_list_test(can_dev):
@@ -286,7 +300,7 @@ def main():
                         type=str)
 
     
-    args = parser.parse_args()    
+    args = parser.parse_args()
     
     linux_can_bus = can.interface.Bus(channel='can0', bustype='socketcan_native', bitrate=500000)
     
@@ -311,10 +325,7 @@ def main():
     print_full_result(test_list[-1])
     test_list.append(receive_random_msg(can_dut, linux_can_bus))
     print_full_result(test_list[-1])
-    
-# #     test_list.append(register_read_test(bpt, uart, args.dut_uart))
-# #     print_full_result(test_list[-1])
-# 
+
     print_results(test_list)
 
 
