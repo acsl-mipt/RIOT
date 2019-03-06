@@ -14,7 +14,7 @@ BOARDS_WITH_STM32_CANDEV := nucleo-f072rb \
                             nucleo-f207zg \
                             nucleo-f412zg \
                             nucleo-f413zh \
-                            nucleo-f429zg \
+                            nucleo-f429zi \
                             nucleo-f446re \
                             nucleo-f446ze
 
