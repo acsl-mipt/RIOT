@@ -62,7 +62,7 @@ static const can_conf_t candev_conf[] = {
         .awum = 1,
         .nart = 0,
         .rflm = 0,
-        .txfp = 0,
+        .txfp = 1,
     },
 #if (CANDEV_STM32_CHAN_NUMOF >= 2) && (CAN_DLL_NUMOF >= 2)
     {
@@ -86,7 +86,7 @@ static const can_conf_t candev_conf[] = {
         .awum = 1,
         .nart = 0,
         .rflm = 0,
-        .txfp = 0,
+        .txfp = 1,
     },
 #endif
 #if (CANDEV_STM32_CHAN_NUMOF >= 3) && (CAN_DLL_NUMOF >= 3)
@@ -109,7 +109,7 @@ static const can_conf_t candev_conf[] = {
         .awum = 1,
         .nart = 0,
         .rflm = 0,
-        .txfp = 0,
+        .txfp = 1,
     },
 #endif
 };
